@@ -40,7 +40,7 @@ public class Cryptographer
 				if (isCommandLineBitch) 
 				{
 					Scanner in = new Scanner(System.in);
-					System.out.println(getName()+ ": Gimme input:");
+					System.out.println(getName()+ ": Gimme input, allowed length:"+(key.length()/2)+":");
 
 					String s = in.nextLine();
 
