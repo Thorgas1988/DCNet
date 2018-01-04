@@ -25,6 +25,23 @@ public class Cryptographer
 		private KeyStorage keyStorage;
 		private int maxCryptographers;
 		
+		Runnable continuesReader = new Runnable() 
+		{
+			@Override
+			public void run() 
+			{
+				while (true) 
+				{
+					System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
+					Scanner in = new Scanner(System.in);
+					
+					String s = in.nextLine();
+					
+					lastEnteredMessage = bytesToHex(s.getBytes());
+				}
+			}
+		};
+		
 		public Handler(KeyStorage keyStorage, int maxCryptographers, Socket socket, boolean isCommandLine) throws IOException 
 		{
 			super(socket);
@@ -34,25 +51,34 @@ public class Cryptographer
 			
 			id = cId++;
 			
-			if (DCNet.mode == Mode.TASK_2 && isCommandLine) {
+			if (DCNet.mode == Mode.TASK_2 && isCommandLine) 
+			{
+				new Thread(continuesReader).start();
+				
 				Timer timer = new Timer();
 				String initalMessage = new String();
-				for (int i = 0; i < keyStorage.keyLength; i++) {
+				for (int i = 0; i < keyStorage.keyLength; i++) 
+				{
 					initalMessage = initalMessage.concat("30");
 				}
 				lastEnteredMessage = initalMessage;
 				
 				System.out.println(lastEnteredMessage);
-				timer.scheduleAtFixedRate(new TimerTask() {
-					  @Override
-					  public void run() {
-						  try {
+				timer.scheduleAtFixedRate(new TimerTask() 
+				{
+					@Override
+					public void run() 
+					{
+						try 
+						{
 							send(encryptDecrypt(hexStringToByteArray(lastEnteredMessage)));
-						} catch (IOException e) {
+						} 
+						catch (IOException e) 
+						{
 							e.printStackTrace();
 						}
-					  }
-					},INTERVAL_5S, INTERVAL_5S);
+					}
+				},INTERVAL_5S, INTERVAL_5S);
 			}
 		}
 		
@@ -67,21 +93,30 @@ public class Cryptographer
 			{
 				byte[] decryptedMessage = null;
 				
-				if (isCommandLine && (DCNet.mode == Mode.TASK_1 || DCNet.mode == Mode.TASK_4)) 
+				if (isCommandLine && (DCNet.mode == Mode.TASK_1 || DCNet.mode == Mode.TASK_2 || DCNet.mode == Mode.TASK_4)) 
 				{
-					Scanner in = new Scanner(System.in);
-					System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
-
-					String s = in.nextLine();
-
-					byte[] encryptedMessage = encryptDecrypt(s.getBytes());
+					if (DCNet.mode != Mode.TASK_2) 
+					{
+						Scanner in = new Scanner(System.in);
+						System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
+						
+						String s = in.nextLine();
+						
+						byte[] encryptedMessage = encryptDecrypt(s.getBytes());
+						
+						System.out.println(getName()+ ": Original Message:"+s);
+						System.out.println(getName()+ ": Encrypted Message to send:"+bytesToHex(encryptedMessage));
+						
+						send(encryptedMessage);
+						
+						decryptedMessage = encryptedMessage;
+					}
+					else
+					{
+						byte[] encryptedMessage = encryptDecrypt(hexStringToByteArray(lastEnteredMessage));
+						decryptedMessage = encryptedMessage;
+					}
 					
-					System.out.println(getName()+ ": Original Message:"+s);
-					System.out.println(getName()+ ": Encrypted Message to send:"+bytesToHex(encryptedMessage));
-					
-					send(encryptedMessage);
-					
-					decryptedMessage = encryptedMessage;
 					
 					for (int i = 0; i < maxCryptographers-1; i++) 
 					{
@@ -101,16 +136,12 @@ public class Cryptographer
 						
 						if (i == 0) 
 						{
-							if (isCommandLine) {
-								decryptedMessage = hexStringToByteArray(tmpdecryptedMessage);
-							} else {
-								byte[] emptyMessage = new byte[keyStorage.keyLength];
-								byte[] encryptedMessage = encryptDecrypt(emptyMessage);
-								decryptedMessage = encryptedMessage;
-								
-								System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
-								send(encryptedMessage);
-							}
+							byte[] emptyMessage = new byte[keyStorage.keyLength];
+							byte[] encryptedMessage = encryptDecrypt(emptyMessage);
+							decryptedMessage = encryptedMessage;
+
+							System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
+							send(encryptedMessage);
 						}
 						
 						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));		
