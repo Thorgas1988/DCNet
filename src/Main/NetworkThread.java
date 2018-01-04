@@ -22,16 +22,23 @@ public abstract class NetworkThread extends Thread
 	
 	public void send(String data) throws IOException
 	{
-		pw.println(data);
-		pw.println("$$$EOF$$$");
+		if (data.length() > 0) 
+		{
+			pw.println(data);
+			pw.println("$$$EOF$$$");
+		}
+		else
+		{
+			System.out.println("DAMN:"+getName());
+		}
 	}
 	
 	public void send(byte[] data) throws IOException
 	{
-		send(new String(data));
+		send(bytesToHex(data));
 	}
 	
-	public byte[] readData() throws IOException
+	public String readData() throws IOException
 	{
 		 String inputLine;
 		 StringBuilder out = new StringBuilder();
@@ -48,29 +55,7 @@ public abstract class NetworkThread extends Thread
 			 }
          }
 		 
-		 return out.toString().getBytes();
-//		Scanner in  = new Scanner( is );
-//        StringBuilder out = new StringBuilder();
-//        
-//        System.out.println(is.available());
-//        
-//        while (in.hasNextLine()) 
-//        {
-//        	String line = in.nextLine();
-//        	System.out.println("Read:"+line); 
-//        	if (line.equals("$$$EOF$$$")) 
-//        	{
-//				break;
-//			} 
-//        	else 
-//        	{
-//        		out.append(line);
-//			}
-//        }
-//        System.out.println("Read:"+out.toString()); 
-//        in.close();
-//        
-//        return out.toString().getBytes();
+		 return out.toString();
 	}
 	
 	@Override
@@ -85,6 +70,7 @@ public abstract class NetworkThread extends Thread
 		catch (IOException e) 
 		{
 			e.printStackTrace();
+			System.exit(1);
 		}
 		finally 
 		{
@@ -132,6 +118,7 @@ public abstract class NetworkThread extends Thread
 	    }
 	    return data;
 	}
+	
 	public abstract void runSpecialized() throws IOException;
 	
 }

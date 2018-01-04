@@ -6,30 +6,33 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
+import Main.DCNet.Mode;
+
 public class Cryptographer
 {
 	static int cId = 0;
+	int id;
 	
 	private class Handler extends NetworkThread
 	{
-		private boolean isCommandLineBitch = false;
+		private boolean isCommandLine = false;
 		private KeyStorage keyStorage;
-		private String key;
 		private int maxCryptographers;
 		
 		public Handler(KeyStorage keyStorage, int maxCryptographers, Socket socket, boolean isCommandLineBitch) throws IOException 
 		{
 			super(socket);
-			this.isCommandLineBitch = isCommandLineBitch;
+			this.isCommandLine = isCommandLineBitch;
 			this.keyStorage = keyStorage;
-			this.key = keyStorage.getKey();
 			this.maxCryptographers = maxCryptographers;
+			
+			id = cId++;
 		}
 		
 		@Override
 		public void runSpecialized() throws IOException 
 		{
-			setName("Cryptographer "+cId++);
+			setName("Cryptographer "+id);
 
 			System.out.println(getName()+ ": "+socket+" is connected.");
 
@@ -37,10 +40,10 @@ public class Cryptographer
 			{
 				byte[] decryptedMessage = null;
 				
-				if (isCommandLineBitch) 
+				if (isCommandLine && DCNet.mode == Mode.TASK_4) 
 				{
 					Scanner in = new Scanner(System.in);
-					System.out.println(getName()+ ": Gimme input, allowed length:"+(key.length()/2)+":");
+					System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
 
 					String s = in.nextLine();
 
@@ -55,8 +58,9 @@ public class Cryptographer
 					
 					for (int i = 0; i < maxCryptographers-1; i++) 
 					{
-						byte[] tmpdecryptedMessage = encryptDecrypt(readData());
-						decryptedMessage = xor(decryptedMessage, tmpdecryptedMessage);
+						String tmpdecryptedMessage = readData();
+						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
+						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));
 						
 						System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
 					}
@@ -66,19 +70,20 @@ public class Cryptographer
 				{
 					for (int i = 0; i < maxCryptographers-1; i++) 
 					{
-						byte[] tmpdecryptedMessage = encryptDecrypt(readData());
+						String tmpdecryptedMessage = readData();//encryptDecrypt(readData());
+						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
 						
 						if (i == 0) 
 						{
-							byte[] emptyMessage = new byte[key.length()/2];
+							byte[] emptyMessage = new byte[keyStorage.keyLength];
 							byte[] encryptedMessage = encryptDecrypt(emptyMessage);
 							decryptedMessage = encryptedMessage;
 							
+							System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
 							send(encryptedMessage);
 						}
 						
-						decryptedMessage = xor(decryptedMessage, tmpdecryptedMessage);
-						
+						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));		
 						System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
 					}
 					System.out.println(getName()+ ": Finished Data read: Size:"+decryptedMessage.length+ ", Decrypted Message:"+new String(decryptedMessage));
@@ -86,20 +91,23 @@ public class Cryptographer
 			}
 		}
 		
-		public byte[] encryptDecrypt(byte[] initialEncryptedData)
+		public byte[] encryptDecrypt(byte[] data)
 		{
-			List<String> otherKeys = keyStorage.getOtherKeys(key);
+			List<String> otherKeys = keyStorage.getOtherKeys(id);
+			
+			System.out.println(getName()+ ": Data :"+bytesToHex(data));
 			
 			for (Iterator<String> iterator = otherKeys.iterator(); iterator.hasNext();) 
 			{
 				String otherKey = iterator.next();
 				
+				System.out.println(getName()+ ": XOR otherKey :"+otherKey);
 				byte[] otherKeyAsBytes = hexStringToByteArray(otherKey);
 				
-				initialEncryptedData = xor(initialEncryptedData, otherKeyAsBytes);
+				data = xor(data, otherKeyAsBytes);
 				
 			}
-			return initialEncryptedData;
+			return data;
 		}
 		
 		public byte[] xor(byte[] input1, byte[] input2)
