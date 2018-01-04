@@ -99,16 +99,18 @@ public class Cryptographer
 						String tmpdecryptedMessage = readData();
 						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
 						
-						decryptedMessage = hexStringToByteArray(tmpdecryptedMessage);
-						
-						if (i == 0 && !isCommandLine) 
+						if (i == 0) 
 						{
-							byte[] emptyMessage = new byte[keyStorage.keyLength];
-							byte[] encryptedMessage = encryptDecrypt(emptyMessage);
-							decryptedMessage = encryptedMessage;
-							
-							System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
-							send(encryptedMessage);
+							if (isCommandLine) {
+								decryptedMessage = hexStringToByteArray(tmpdecryptedMessage);
+							} else {
+								byte[] emptyMessage = new byte[keyStorage.keyLength];
+								byte[] encryptedMessage = encryptDecrypt(emptyMessage);
+								decryptedMessage = encryptedMessage;
+								
+								System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
+								send(encryptedMessage);
+							}
 						}
 						
 						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));		
