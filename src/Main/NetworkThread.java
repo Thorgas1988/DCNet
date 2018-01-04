@@ -24,12 +24,12 @@ public abstract class NetworkThread extends Thread
 	{
 		if (data.length() > 0) 
 		{
-			pw.println(data);
-			pw.println("$$$EOF$$$");
+			System.out.println("ID:"+getName()+":Send to:"+socket.getOutputStream().toString()+": "+data);
+			pw.println(data + "$$$EOF$$$");
 		}
 		else
 		{
-			System.out.println("DAMN:"+getName());
+			System.out.println("ID:"+getName()+": trys to send empty content");
 		}
 	}
 	
@@ -45,15 +45,26 @@ public abstract class NetworkThread extends Thread
 		 
 		 while ((inputLine = br.readLine()) != null) 
 		 {
-			 if (inputLine.equals("$$$EOF$$$")) 
+			 System.out.println("ID:"+getName()+":Read from:"+socket.getInputStream().toString()+": "+inputLine);
+			 if (inputLine.endsWith("$$$EOF$$$")) 
 			 {
-				 break;
+				 out.append(inputLine.substring(0, inputLine.indexOf("$$$EOF$$$")));
+				 if (out.length() != 0) 
+				 {
+					 break;
+				 }
+				 else
+				 {
+					 System.out.println("ID:"+getName()+": Suspisous empty content read");
+				 }
 			 }
 			 else
 			 {
 				 out.append(inputLine);
 			 }
          }
+		 
+		//System.out.println("ID:"+getName()+": Data returned:"+out.toString());
 		 
 		 return out.toString();
 	}

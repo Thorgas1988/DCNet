@@ -72,18 +72,18 @@ public class SPoF extends Thread
 		{
 			while (true) 
 			{
-				System.out.println(getName()+ ": SpoFHandler waiting for data");
+				//System.out.println(getName()+ ": SpoFHandler waiting for data");
 				
 				String dataReceived = readData();
 				
-				System.out.println(getName()+ ": SpoFHandler received data:"+ dataReceived);
+				//System.out.println(getName()+ ": SpoFHandler received data:"+ dataReceived);
 				for (Iterator<SPoFHandler> iterator = cryptographer.iterator(); iterator.hasNext();) 
 				{
 					SPoFHandler cryptographer = iterator.next();
 					
 					if (cryptographer != this) 
 					{
-						System.out.println(getName()+ ": SpoFHandler send: Size:"+dataReceived.length() / 2+ ", Data:"+dataReceived);
+						//System.out.println(getName()+ ": SpoFHandler send to:"+cryptographer.getName()+", Size:"+dataReceived.length() / 2+ ", Data:"+dataReceived);
 						cryptographer.send(dataReceived);
 					}
 				}

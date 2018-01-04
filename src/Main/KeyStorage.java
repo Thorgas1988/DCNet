@@ -66,7 +66,7 @@ public class KeyStorage
 		
 		keyLength = size;
 		
-		System.out.println(keys.toString());
+		System.out.println("KeyStorage:"+keys.toString());
 	}
 	
 	public String createKey(int size)
