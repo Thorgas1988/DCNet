@@ -24,7 +24,7 @@ public abstract class NetworkThread extends Thread
 	{
 		if (data.length() > 0) 
 		{
-			System.out.println("ID:"+getName()+":Send to:"+socket.getOutputStream().toString()+": "+data);
+			//System.out.println("ID:"+getName()+":Send to:"+socket.getOutputStream().toString()+": "+data);
 			pw.println(data + "$$$EOF$$$");
 		}
 		else
@@ -45,7 +45,7 @@ public abstract class NetworkThread extends Thread
 		 
 		 while ((inputLine = br.readLine()) != null) 
 		 {
-			 System.out.println("ID:"+getName()+":Read from:"+socket.getInputStream().toString()+": "+inputLine);
+			 //System.out.println("ID:"+getName()+":Read from:"+socket.getInputStream().toString()+": "+inputLine);
 			 if (inputLine.endsWith("$$$EOF$$$")) 
 			 {
 				 out.append(inputLine.substring(0, inputLine.indexOf("$$$EOF$$$")));
@@ -77,6 +77,7 @@ public abstract class NetworkThread extends Thread
 		try 
 		{
 			runSpecialized();
+			System.exit(1);
 		} 
 		catch (IOException e) 
 		{

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -18,6 +19,8 @@ public class Cryptographer
 	int id;
 	
 	private String lastEnteredMessage = "";
+	
+	private boolean isSending = false;
 	
 	private class Handler extends NetworkThread
 	{
@@ -80,6 +83,43 @@ public class Cryptographer
 					}
 				},INTERVAL_5S, INTERVAL_5S);
 			}
+			
+			if (DCNet.mode == Mode.TASK_3) 
+			{
+				startTimerRandomly();
+			}
+		}
+		
+		private void startTimerRandomly()
+		{
+			String dataToSend = ""+id+System.currentTimeMillis();
+			String hexAscii = asciiToHex(dataToSend);
+			
+			Random r = new Random();
+			
+			int timerValue =  3 + r.nextInt(22);
+			System.out.println(getName()+ ": Sending:"+dataToSend+", Data:"+hexAscii+" after "+timerValue +" s");
+					
+			Timer timer = new Timer();
+			
+			timer.schedule(new TimerTask() 
+			{
+				@Override
+				public void run() 
+				{
+					try 
+					{
+						lastEnteredMessage = dataToSend;
+						isSending = true;
+						startTimerRandomly();
+						send(encryptDecrypt(hexStringToByteArray(hexAscii)));
+					} 
+					catch (IOException e) 
+					{
+						e.printStackTrace();
+					}
+				}
+			},timerValue * 1000, timerValue  * 1000);
 		}
 		
 		@Override
@@ -134,7 +174,11 @@ public class Cryptographer
 						String tmpdecryptedMessage = readData();
 						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
 						
-						if (i == 0) 
+						if (isSending) {
+							decryptedMessage = encryptDecrypt(lastEnteredMessage.getBytes());
+							isSending = false;
+						}
+						else if (i == 0) 
 						{
 							byte[] emptyMessage = new byte[keyStorage.keyLength];
 							byte[] encryptedMessage = encryptDecrypt(emptyMessage);
@@ -177,6 +221,17 @@ public class Cryptographer
 				result[i] = (byte) (b ^ input2[i++]);
 			return result;
 		}
+		
+		private String asciiToHex(String asciiValue)
+		   {
+		      char[] chars = asciiValue.toCharArray();
+		      StringBuffer hex = new StringBuffer();
+		      for (int i = 0; i < chars.length; i++)
+		      {
+		         hex.append(Integer.toHexString((int) chars[i]));
+		      }
+		      return hex.toString();
+		   }
 			
 	}
 	

@@ -30,8 +30,16 @@ public class DCNet
 			inputAmountofCryptographer = in.nextInt();
 		}
 		
-		System.out.print("Enter Keylength:");
-		int inputKeyLength = in.nextInt();
+		int inputKeyLength = 6;
+		
+		if (mode == Mode.TASK_3) {
+			inputKeyLength = 14;
+		}
+		else
+		{
+			System.out.print("Enter Keylength:");
+			inputKeyLength = in.nextInt();
+		}
 		
 		KeyStorage keyStorage = new KeyStorage(inputAmountofCryptographer, inputKeyLength);
 		
