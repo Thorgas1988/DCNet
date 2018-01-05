@@ -40,7 +40,7 @@ public class Cryptographer
 					
 					String s = in.nextLine();
 					
-					lastEnteredMessage = bytesToHex(s.getBytes());
+					lastEnteredMessage = s;
 				}
 			}
 		};
@@ -58,36 +58,42 @@ public class Cryptographer
 			{
 				new Thread(continuesReader).start();
 				
-				Timer timer = new Timer();
-				String initalMessage = new String();
-				for (int i = 0; i < keyStorage.keyLength; i++) 
-				{
-					initalMessage = initalMessage.concat("30");
-				}
-				lastEnteredMessage = initalMessage;
-				
-				System.out.println(lastEnteredMessage);
-				timer.scheduleAtFixedRate(new TimerTask() 
-				{
-					@Override
-					public void run() 
-					{
-						try 
-						{
-							send(encryptDecrypt(hexStringToByteArray(lastEnteredMessage)));
-						} 
-						catch (IOException e) 
-						{
-							e.printStackTrace();
-						}
-					}
-				},INTERVAL_5S, INTERVAL_5S);
+				start5STimer();
 			}
 			
 			if (DCNet.mode == Mode.TASK_3) 
 			{
 				startTimerRandomly();
 			}
+		}
+		
+		private void start5STimer()
+		{
+			String initalMessage = new String();
+			for (int i = 0; i < keyStorage.keyLength; i++) 
+			{
+				initalMessage = initalMessage.concat("0");
+			}
+			
+			lastEnteredMessage = initalMessage;
+			
+			Timer timer = new Timer();
+			timer.scheduleAtFixedRate(new TimerTask() 
+			{
+				@Override
+				public void run() 
+				{
+					try 
+					{
+						isSending = true;
+						send(encryptDecrypt(hexStringToByteArray(asciiToHex(lastEnteredMessage))));
+					} 
+					catch (IOException e) 
+					{
+						e.printStackTrace();
+					}
+				}
+			},INTERVAL_5S, INTERVAL_5S);
 		}
 		
 		private void startTimerRandomly()
@@ -133,63 +139,132 @@ public class Cryptographer
 			{
 				byte[] decryptedMessage = null;
 				
-				if (isCommandLine && (DCNet.mode == Mode.TASK_1 || DCNet.mode == Mode.TASK_2 || DCNet.mode == Mode.TASK_4)) 
+				if (isCommandLine && (DCNet.mode == Mode.TASK_1 || DCNet.mode == Mode.TASK_4 || DCNet.mode == Mode.TASK_5)) 
 				{
-					if (DCNet.mode != Mode.TASK_2) 
+					Scanner in = new Scanner(System.in);
+					System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
+
+					String s = in.nextLine();
+
+					byte[] encryptedMessage = encryptDecrypt(s.getBytes());
+
+					System.out.println(getName()+ ": Original Message:"+s);
+					System.out.println(getName()+ ": Encrypted Message to send:"+bytesToHex(encryptedMessage));
+
+					send(encryptedMessage);
+
+					if (DCNet.mode == Mode.TASK_5)
 					{
-						Scanner in = new Scanner(System.in);
-						System.out.println(getName()+ ": Gimme input, allowed length:"+(keyStorage.keyLength)+":");
+						byte[] emptyMessage = new byte[keyStorage.keyLength];
+						byte[] emptyEncryptedMessage = encryptDecrypt(emptyMessage);
+
+						System.out.println(getName()+ ": Send Null Data: Size:"+bytesToHex(emptyEncryptedMessage).length() / 2+ ", Message:"+bytesToHex(emptyEncryptedMessage));
 						
-						String s = in.nextLine();
-						
-						byte[] encryptedMessage = encryptDecrypt(s.getBytes());
-						
-						System.out.println(getName()+ ": Original Message:"+s);
-						System.out.println(getName()+ ": Encrypted Message to send:"+bytesToHex(encryptedMessage));
-						
-						send(encryptedMessage);
-						
-						decryptedMessage = encryptedMessage;
+						send(emptyEncryptedMessage);
 					}
 					else
 					{
-						byte[] encryptedMessage = encryptDecrypt(hexStringToByteArray(lastEnteredMessage));
 						decryptedMessage = encryptedMessage;
 					}
 					
-					
-					for (int i = 0; i < maxCryptographers-1; i++) 
+					if (DCNet.mode == Mode.TASK_5)
 					{
-						String tmpdecryptedMessage = readData();
-						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
-						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));
-						System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
+						for (int i = 0; i < (maxCryptographers - 1) * 2; i++)
+						{
+							String forwardRound = readData();
+							
+							System.out.println(getName()+ ": Raw Data read: Size:"+forwardRound.length() / 2+ ", Message:"+forwardRound);
+							
+							byte[] encryptedPayload = encryptDecrypt(hexStringToByteArray(forwardRound));
+							
+							System.out.println(getName()+ ": Send Data: Size:"+bytesToHex(encryptedPayload).length() / 2+ ", Message:"+bytesToHex(encryptedPayload));
+							
+							send(encryptedPayload);
+						}
+						
+						String messageRound = readData();
+						
+						System.out.println(getName()+ ": Message Data read: Size:"+messageRound.length() / 2+ ", Message:"+messageRound);
+						
+						String nullRound = readData();
+						
+						System.out.println(getName()+ ": Null Data read: Size:"+nullRound.length() / 2+ ", Message:"+nullRound);
+						
+						decryptedMessage = xor(hexStringToByteArray(messageRound), hexStringToByteArray(nullRound));
+					}
+					else
+					{
+						for (int i = 0; i < maxCryptographers-1; i++) 
+						{
+							String tmpdecryptedMessage = readData();
+							System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
+							decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));
+							System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
+						}
 					}
 					System.out.println(getName()+ ": Finished Data read: Size:"+decryptedMessage.length+ ", Decrypted Message:"+new String(decryptedMessage));
 				}
 				else
 				{
-					for (int i = 0; i < maxCryptographers-1; i++) 
+					if (DCNet.mode == Mode.TASK_5)
 					{
-						String tmpdecryptedMessage = readData();
-						System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
-						
-						if (isSending) {
-							decryptedMessage = encryptDecrypt(lastEnteredMessage.getBytes());
-							isSending = false;
-						}
-						else if (i == 0) 
+						for (int i = 0; i < (maxCryptographers - 1) * 2; i++)
 						{
-							byte[] emptyMessage = new byte[keyStorage.keyLength];
-							byte[] encryptedMessage = encryptDecrypt(emptyMessage);
-							decryptedMessage = encryptedMessage;
+							String forwardRound = readData();
+							
+							System.out.println(getName()+ ": Raw Data read: Size:"+forwardRound.length() / 2+ ", Message:"+forwardRound);
+							
+							byte[] encryptedPayload = encryptDecrypt(hexStringToByteArray(forwardRound));
+							
+							System.out.println(getName()+ ": Send Data: Size:"+bytesToHex(encryptedPayload).length() / 2+ ", Message:"+bytesToHex(encryptedPayload));
+							
+							send(encryptedPayload);
+							
+							if (i == 0)
+							{
+								byte[] emptyMessage = new byte[keyStorage.keyLength];
+								byte[] emptyEncryptedMessage = encryptDecrypt(emptyMessage);
 
-							System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
-							send(encryptedMessage);
+								System.out.println(getName()+ ": Send Null Data: Size:"+bytesToHex(emptyEncryptedMessage).length() / 2+ ", Message:"+bytesToHex(emptyEncryptedMessage));
+								
+								send(emptyEncryptedMessage);
+							}
 						}
 						
-						decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));		
-						System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
+						String messageRound = readData();
+						
+						System.out.println(getName()+ ": Message Data read: Size:"+messageRound.length() / 2+ ", Message:"+messageRound);
+						
+						String nullRound = readData();
+						
+						System.out.println(getName()+ ": Null Data read: Size:"+nullRound.length() / 2+ ", Message:"+nullRound);
+						
+						decryptedMessage = xor(hexStringToByteArray(messageRound), hexStringToByteArray(nullRound));
+					}
+					else
+					{
+						for (int i = 0; i < maxCryptographers-1; i++) 
+						{
+							String tmpdecryptedMessage = readData();
+							System.out.println(getName()+ ": Raw Data read: Size:"+tmpdecryptedMessage.length() / 2+ ", Message:"+tmpdecryptedMessage);
+
+							if (isSending) {
+								decryptedMessage = encryptDecrypt(lastEnteredMessage.getBytes());
+								isSending = false;
+							}
+							else if (i == 0) 
+							{
+								byte[] emptyMessage = new byte[keyStorage.keyLength];
+								byte[] encryptedMessage = encryptDecrypt(emptyMessage);
+								decryptedMessage = encryptedMessage;
+
+								System.out.println(getName()+ ": Send: Message:"+bytesToHex(decryptedMessage));
+								send(encryptedMessage);
+							}
+
+							decryptedMessage = xor(decryptedMessage, hexStringToByteArray(tmpdecryptedMessage));		
+							System.out.println(getName()+ ": Data read: Size:"+decryptedMessage.length+ ", Message:"+bytesToHex(decryptedMessage));
+						}
 					}
 					System.out.println(getName()+ ": Finished Data read: Size:"+decryptedMessage.length+ ", Decrypted Message:"+new String(decryptedMessage));
 				}
@@ -200,15 +275,27 @@ public class Cryptographer
 		{
 			List<String> otherKeys = keyStorage.getOtherKeys(id);
 			
-			for (Iterator<String> iterator = otherKeys.iterator(); iterator.hasNext();) 
+			if (DCNet.mode == Mode.TASK_5)
 			{
-				String otherKey = iterator.next();
+				String otherKey = otherKeys.get(1);
 				
 				byte[] otherKeyAsBytes = hexStringToByteArray(otherKey);
 				
 				data = xor(data, otherKeyAsBytes);
-				
 			}
+			else
+			{
+				for (Iterator<String> iterator = otherKeys.iterator(); iterator.hasNext();) 
+				{
+					String otherKey = iterator.next();
+					
+					byte[] otherKeyAsBytes = hexStringToByteArray(otherKey);
+					
+					data = xor(data, otherKeyAsBytes);
+					
+				}
+			}
+			
 			return data;
 		}
 		

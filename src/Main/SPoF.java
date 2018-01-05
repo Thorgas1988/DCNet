@@ -6,6 +6,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import Main.DCNet.Mode;
+
 public class SPoF extends Thread
 {
 	private static final int PORT = 1338;
@@ -13,7 +15,7 @@ public class SPoF extends Thread
 	private Socket socket;
 	private ArrayList<SPoFHandler> cryptographer = new ArrayList<SPoFHandler>();
 	
-	static int sId = 0;
+	private static int sId = 0;
 	
 	public SPoF()
 	{
@@ -61,10 +63,13 @@ public class SPoF extends Thread
 	
 	private class SPoFHandler extends NetworkThread
 	{
+		private int id;
+		
 		public SPoFHandler(Socket socket) throws IOException
 		{
 			super(socket);
-			setName("SPoFHandler:"+sId++);
+			id = sId++;
+			setName("SPoFHandler:"+id);
 		}
 		
 		@Override
@@ -76,15 +81,33 @@ public class SPoF extends Thread
 				
 				String dataReceived = readData();
 				
-				//System.out.println(getName()+ ": SpoFHandler received data:"+ dataReceived);
-				for (Iterator<SPoFHandler> iterator = cryptographer.iterator(); iterator.hasNext();) 
+				if (DCNet.mode == Mode.TASK_5)
 				{
-					SPoFHandler cryptographer = iterator.next();
+					//get next in arraylist
+					int sendTo = id + 1;
 					
-					if (cryptographer != this) 
+					if (sendTo == cryptographer.size())
 					{
-						//System.out.println(getName()+ ": SpoFHandler send to:"+cryptographer.getName()+", Size:"+dataReceived.length() / 2+ ", Data:"+dataReceived);
-						cryptographer.send(dataReceived);
+						sendTo = 0;
+					}
+					
+					//System.out.println(getName()+ ": SpoFHandler send to:"+cryptographer.get(sendTo).getName()+", Size:"+dataReceived.length() / 2+ ", Data:"+dataReceived);
+					
+					//only send to neighbor
+					cryptographer.get(sendTo).send(dataReceived);
+				}
+				else
+				{
+					//System.out.println(getName()+ ": SpoFHandler received data:"+ dataReceived);
+					for (Iterator<SPoFHandler> iterator = cryptographer.iterator(); iterator.hasNext();) 
+					{
+						SPoFHandler cryptographer = iterator.next();
+						
+						if (cryptographer != this) 
+						{
+							//System.out.println(getName()+ ": SpoFHandler send to:"+cryptographer.getName()+", Size:"+dataReceived.length() / 2+ ", Data:"+dataReceived);
+							cryptographer.send(dataReceived);
+						}
 					}
 				}
 			}

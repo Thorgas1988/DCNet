@@ -25,7 +25,8 @@ public class DCNet
 		mode = Mode.values()[inputTask - 1];
 		
 		int inputAmountofCryptographer = 3;
-		if (mode == Mode.TASK_4) {
+		if (mode == Mode.TASK_4 || mode == Mode.TASK_5) 
+		{
 			System.out.print("Enter Amount of Cryptographer:");
 			inputAmountofCryptographer = in.nextInt();
 		}
