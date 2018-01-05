@@ -219,7 +219,7 @@ public class Cryptographer
 							System.out.println(getName()+ ": Send Data: Size:"+bytesToHex(encryptedPayload).length() / 2+ ", Message:"+bytesToHex(encryptedPayload));
 							
 							send(encryptedPayload);
-							
+							/*
 							if (i == 0)
 							{
 								byte[] emptyMessage = new byte[keyStorage.keyLength];
@@ -228,7 +228,7 @@ public class Cryptographer
 								System.out.println(getName()+ ": Send Null Data: Size:"+bytesToHex(emptyEncryptedMessage).length() / 2+ ", Message:"+bytesToHex(emptyEncryptedMessage));
 								
 								send(emptyEncryptedMessage);
-							}
+							}*/
 						}
 						
 						String messageRound = readData();
