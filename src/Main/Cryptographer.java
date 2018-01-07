@@ -148,7 +148,16 @@ public class Cryptographer
 					Scanner in = new Scanner(System.in);
 					System.out.println(getName() + ": Gimme input, allowed length:" + (keyStorage.keyLength) + ":");
 
-					String s = in.nextLine();
+					String s = "";
+					
+					while (s.length() != keyStorage.keyLength)
+					{
+						s = in.nextLine();
+						if (s.length() != keyStorage.keyLength)
+						{
+							System.out.println(getName() + ": Input not valid, it must be as same length as keys are. Input length:" + s.length() + ", Needed length:"+keyStorage.keyLength);
+						}
+					}
 
 					timeStampStart = System.currentTimeMillis();
 					
